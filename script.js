@@ -1,6 +1,7 @@
 // Force refresh - script.js
 const IS_LOCAL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-const API_BASE_URL = IS_LOCAL ? "http://localhost:8001" : "https://cvfactory-server-627721457878.asia-northeast3.run.app";
+// API 요청은 이제 동일한 출처(origin)의 /api 접두사를 사용합니다.
+const API_PREFIX = "/api";
 
 document.addEventListener('DOMContentLoaded', function() {
   // console.log("DOM fully loaded and parsed");
@@ -110,7 +111,8 @@ document.addEventListener('DOMContentLoaded', function() {
         eventSource.close(); // 이전 EventSource가 있다면 닫기
     }
 
-    eventSource = new EventSource(API_BASE_URL + "/stream-task-status/" + taskId);
+    // EventSource URL에서 API_BASE_URL 대신 API_PREFIX를 사용하도록 수정
+    eventSource = new EventSource(API_PREFIX + "/stream-task-status/" + taskId);
 
     eventSource.onopen = function() {
         // console.log("SSE connection opened for task " + taskId + ".");
@@ -225,7 +227,8 @@ document.addEventListener('DOMContentLoaded', function() {
       displayed_text: textToLog || ""
     };
   
-    fetch(API_BASE_URL + "/log-displayed-cv", {
+    // fetch URL에서 API_BASE_URL 대신 API_PREFIX를 사용하도록 수정
+    fetch(API_PREFIX + "/log-displayed-cv", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -249,34 +252,42 @@ document.addEventListener('DOMContentLoaded', function() {
   
   generateButtonElement.addEventListener('click', function() {
     // console.log("Generate button clicked.");
-    var url = job_url_textarea.value.trim();
-    var userPrompt = userStoryTextarea.value.trim();
-    // console.log(\`URL: \${url}, Prompt: \${userPrompt ? 'Provided' : 'Not provided'}\`);
+    // Clear previous error messages
+    clearErrorInfo();
+    
+    // 이전 SSE 연결이 활성화되어 있다면 종료
+    if(eventSource && eventSource.readyState !== EventSource.CLOSED) {
+      eventSource.close();
+      // console.log('Previous SSE connection closed.');
+    }
 
-    if (!url) {
-      // console.log("URL is empty. Alerting user.");
-      alert("채용 공고 URL을 입력해주세요.");
+    const jobUrl = job_url_textarea.value.trim();
+    const userPrompt = userStoryTextarea.value;
+    
+    // console.log(`Job URL: ${jobUrl}`);
+    // console.log(`User Prompt: ${userPrompt}`);
+
+    if (!jobUrl) {
+      statusMessageElement.textContent = "채용공고 URL을 입력해주세요.";
       return;
     }
 
-    // console.log("Calling showLoadingState(true)");
     showLoadingState(true);
-    statusMessageElement.textContent = "자기소개서 생성 요청 중..."; // 초기 메시지
-    generatedResumeTextarea.value = ""; // 이전 결과 지우기
 
     const payload = {
-      job_posting_url: url,
-      user_prompt: userPrompt || null // user_prompt가 없으면 null로 설정
+      job_posting_url: jobUrl,
+      user_prompt: userPrompt
     };
+    // console.log("Payload to be sent:", payload);
 
-    // console.log("Payload for POST request:", payload);
-
-    fetch(API_BASE_URL + "/", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json', // Content-Type 변경
-      },
-      body: JSON.stringify(payload), // FormData 대신 JSON 페이로드 사용
+    // fetch URL에서 API_BASE_URL 대신 API_PREFIX를 사용하도록 수정
+    fetch(API_PREFIX + "/start-task", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload),
     })
     .then(response => {
       // console.log("Raw response from /:", response);

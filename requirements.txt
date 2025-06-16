@@ -1,6 +1,9 @@
-Django>=4.2,<5.0
+# Common
 python-dotenv
 requests
+
+# Django (from Frontend)
+Django>=4.2,<5.0
 dj-database-url==2.1.0
 django-cors-headers
 psycopg2-binary
@@ -8,3 +11,20 @@ gunicorn
 whitenoise
 django-compressor 
 django-csp==3.7 
+
+# FastAPI (from Backend)
+fastapi
+uvicorn[standard]
+playwright
+langchain
+langchain-community
+langchain-upstage
+faiss-cpu
+langchain-cohere
+langchain-experimental
+langchain-groq
+celery==5.3.6
+kombu>=5.4.0,<5.5.0
+redis==4.6.0
+beautifulsoup4
+python-multipart 
