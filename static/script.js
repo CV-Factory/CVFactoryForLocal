@@ -251,84 +251,68 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   generateButtonElement.addEventListener('click', function() {
-    // console.log("Generate button clicked.");
-    // Clear previous error messages
-    clearErrorInfo();
-    
-    // 이전 SSE 연결이 활성화되어 있다면 종료
-    if(eventSource && eventSource.readyState !== EventSource.CLOSED) {
-      eventSource.close();
-      // console.log('Previous SSE connection closed.');
-    }
-
+    console.log("Generate button clicked.");
     const jobUrl = job_url_textarea.value.trim();
-    const userPrompt = userStoryTextarea.value;
-    
-    // console.log(`Job URL: ${jobUrl}`);
-    // console.log(`User Prompt: ${userPrompt}`);
+    const userStory = userStoryTextarea.value.trim();
 
     if (!jobUrl) {
-      statusMessageElement.textContent = "채용공고 URL을 입력해주세요.";
+      console.error("Job URL is empty.");
+      statusMessageElement.textContent = "공고 URL을 입력해주세요.";
+      job_url_textarea.focus();
       return;
     }
 
+    if (!userStory) {
+      console.error("User story is empty.");
+      statusMessageElement.textContent = "자기소개서 내용을 입력해주세요.";
+      userStoryTextarea.focus();
+      return;
+    }
+
+    console.log("Starting cover letter generation process...");
     showLoadingState(true);
+    statusMessageElement.textContent = "자기소개서 생성 작업을 시작합니다...";
 
     const payload = {
-      job_posting_url: jobUrl,
-      user_prompt: userPrompt
+      job_url: jobUrl,
+      user_story: userStory
     };
-    // console.log("Payload to be sent:", payload);
 
-    // fetch URL에서 API_BASE_URL 대신 API_PREFIX를 사용하도록 수정
-    fetch(API_PREFIX + "/start-task", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify(payload),
+    console.log("Sending POST request to /api/create-cover-letter/ with payload:", payload);
+    fetch(API_PREFIX + "/create-cover-letter/", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     })
     .then(response => {
-      // console.log("Raw response from /:", response);
+      console.log("Received response from /api/create-cover-letter/");
       if (!response.ok) {
-        // console.error("Server responded with an error:", response.status);
-        showLoadingState(false);
         return response.json().then(errData => {
-            // console.error("Error data from server:", errData);
-            let detailMessage = "알 수 없는 오류";
-            if (errData && errData.detail) {
-                if (typeof errData.detail === 'string') {
-                    detailMessage = errData.detail;
-                } else if (Array.isArray(errData.detail) && errData.detail.length > 0 && errData.detail[0].msg && Array.isArray(errData.detail[0].loc)) {
-                    // FastAPI 유효성 검사 오류 형식 처리
-                    detailMessage = errData.detail.map(d => d.loc.join('.') + " - " + d.msg).join(', ');
-                } else if (typeof errData.detail === 'object') {
-                    detailMessage = JSON.stringify(errData.detail);
-                }
-            }
-            throw new Error(detailMessage);
+          console.error("Error response from server:", errData);
+          throw new Error(errData.detail || `서버 오류: ${response.status}`);
         });
       }
       return response.json();
     })
     .then(data => {
-      // console.log("Successfully received task ID:", data);
+      console.log("Successfully received task ID:", data.task_id);
       if (data.task_id) {
-        statusMessageElement.textContent = "작업이 시작되었습니다 (ID: " + data.task_id + "). 잠시 후 결과가 표시됩니다.";
-        startTaskStreaming(data.task_id); // SSE 스트리밍 시작
+        startTaskStreaming(data.task_id);
       } else {
-        // console.error("Task ID not found in response data:", data);
-        showLoadingState(false);
-        statusMessageElement.textContent = "작업 ID를 받지 못했습니다.";
-        generatedResumeTextarea.value = "오류: 서버에서 작업 ID를 반환하지 않았습니다.";
+        console.error("Task ID not found in response data:", data);
+        throw new Error("작업 ID를 받지 못했습니다.");
       }
     })
     .catch(error => {
-      console.error("Error during fetch operation:", error);
+      console.error('Error starting cover letter generation:', error);
       showLoadingState(false);
-      statusMessageElement.textContent = "자기소개서 생성 요청에 실패했습니다: " + error.message;
-      generatedResumeTextarea.value = "오류로 인해 자기소개서를 생성할 수 없습니다: " + error.message;
+      statusMessageElement.textContent = `오류가 발생했습니다: ${error.message}`;
     });
   });
-}); 
+});
+
+function updateErrorInfo(message, details) {
+  // ... existing code ...
+} 

@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.8-slim
+FROM python:3.9-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -9,7 +9,7 @@ ENV DJANGO_SETTINGS_MODULE=config.settings
 # Set the working directory in the container
 WORKDIR /app
 
-# Install uv for faster package installation
+# Install uv using the official script
 RUN apt-get update && apt-get install -y curl && \
     curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
@@ -18,13 +18,13 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY requirements.txt /app/
 RUN uv pip install --no-cache-dir --system -r requirements.txt
 
-# Copy the entire project into the container
+# Copy application code
 COPY . /app/
 
-# Ensure staticfiles directory exists and run Django management commands
-RUN mkdir -p /app/staticfiles
-RUN python manage.py compress --force
-RUN python manage.py collectstatic --noinput
+# Set non-root user
+RUN useradd --create-home appuser
+WORKDIR /app
+USER appuser
 
 # Expose the port the app runs on
 EXPOSE 8000
