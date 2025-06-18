@@ -125,8 +125,7 @@ This project uses GitHub Actions for its CI/CD pipeline to deploy the backend se
 
 ## 📄 License
 
-CC BY-NC 4.0 License
-(See the [LICENSE](LICENSE) file for the full text.)
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## 📬 Contact
 
